@@ -19,7 +19,7 @@ struct BluetoothDevice {
 
 
 //method to initialize bluetooth device with message and channel map
-void create_device(struct BluetoothDevice* device, char in_message[], int channel_map_seed) {
+void create_device(struct BluetoothDevice* device, char* in_message, int channel_map_seed) {
 
     //struct BluetoothDevice device;
 
@@ -58,7 +58,7 @@ char* encrypt(char* message) {
 //method to decrypt message
 char* decrypt(char* message) {
 
-    printf("uh%s\n", message);
+    printf("%s\n", message);
     int length = (int) strlen(message);
     char str2[length];
     strcpy(str2, message);
@@ -67,8 +67,6 @@ char* decrypt(char* message) {
     for(i = 0; i < length; i++) {
         str2[i] = message[i] - KEY3;
     }
-
-    printf("%s\n", str2);
 
     char* decrypted = str2;
 
@@ -141,17 +139,19 @@ int allow_connection(long freq1, long freq2) {
 //return 0 if unc
 int receive_packet(struct TransmitPacket* incoming_packet, struct BluetoothDevice* receiving_device) {
 
-    printf("%s\n", incoming_packet->encrypted_message);
     //get receiving frequency from receiving device
     struct TransmitPacket* receive_packet = (struct TransmitPacket*) malloc(sizeof(struct TransmitPacket));
     create_packet(receive_packet, receiving_device);
+        printf("%s\n", incoming_packet->encrypted_message);
     long receiving_frequency = receive_packet->frequency;
 
     //if frequency matches incoming packet's frequency, attempt to decrypt
     int connection_success = allow_connection(incoming_packet->frequency, receiving_frequency);
     if(connection_success == 1) {
-        receiving_device->decrypted_message = decrypt(incoming_packet->encrypted_message);
-        printf("%s\n", receiving_device->decrypted_message);
+        char* decrypt_message = decrypt(incoming_packet->encrypted_message);
+
+        receiving_device->decrypted_message = decrypt_message;
+        //printf("%s\n", receiving_device->decrypted_message);
         return 1;
     }
     else {
@@ -170,17 +170,22 @@ int main() {
     int seed = 3;
     struct BluetoothDevice* device1  = (struct BluetoothDevice*) malloc(sizeof(struct BluetoothDevice));
     struct BluetoothDevice* device2  = (struct BluetoothDevice*) malloc(sizeof(struct BluetoothDevice));
-    create_device(device1, "hi I am device 1", seed);
-    create_device(device2, "hi", seed);
+    char* message1 = "hi";
+    char* message2 = "hello";
+    
+    create_device(device1, message1, seed);
+    create_device(device2, message2, seed);
 
     printf("device1 message: %s\n", device1->decrypted_message);
     printf("device2 before connection: %s\n", device2->decrypted_message);
 
 
-    //create packet for device 1 with encryped message
+    //create packet for device 1 with encrypted message
     struct TransmitPacket* send_packet = (struct TransmitPacket*) malloc(sizeof(struct TransmitPacket));
     create_packet(send_packet, device1);
     //printf("%s\n", send_packet.encrypted_message);
+
+    
 
     //attempt to transmit to device 2
     int success_transmit = receive_packet(send_packet, device2);
