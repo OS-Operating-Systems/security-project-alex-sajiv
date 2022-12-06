@@ -7,6 +7,7 @@
 #define KEY 10082001 //chosen key for encrypt/decrypt
 #define KEY2 802001
 #define NUM_CHANNELS 37
+#define CHANNEL_RANGE 2256757
 
 //a bluetooth device has a decrypted message and a channel map to transmit to
 struct BluetoothDevice {
@@ -80,30 +81,38 @@ struct TransmitPacket create_packet(struct BluetoothDevice device) {
             match = 1; //end loop
         }
         channel_count += hop; //hop up 5 channels (apparanently this is standard practice)
-        if(channel_count > NUM_CHANNELS) { //if go higher than 37
+        if(channel_count >= NUM_CHANNELS) { //if go higher than 37
             channel_count -= NUM_CHANNELS; //reset to beginning
         }
     }
-
     //now channel count should have a free channel
-
-    //choose frequency to transmit on based on range of frequencies in channel
-    //all bluetooth frequencies between 2400 - 2483.5 MHZ
-    //so each channel
-
-
+    //below utilizes frequency hop algorithm
+    packet.frequency = generate_freq(channel_count);
+    return packet;
 }
 
-long generate_freq() {
+//calculate frequency for channel
+//this is the frequency hopping algorithm
+long generate_freq(int channel_num) {
+    //choose frequency to transmit on based on range of frequencies in channel
+    //all bluetooth frequencies between 2400 - 2483.5 MHZ, so 8.35E7 freqs in total
+    //divided by 37 channels, each channel has 2,256,757 freqs to choose from
+    //so the range for a channel is:
+    //min = 2400 Mhz + (channel_num * 2,256,757)
+    //max = min + (channel_num + 1) * 2,256,757
+
+    long channel_min = MIN_FREQ + (channel_num * CHANNEL_RANGE);
+    long channel_max = channel_min + CHANNEL_RANGE;
+
     srand(time(0));
-    long freq = rand() % (MAX_FREQ - MIN_FREQ + 1) + MIN_FREQ;
+
+    long freq = rand() % (channel_max - channel_min + 1) + channel_min;
+
+    //for random frequency in entire range
+    //long freq = rand() % (MAX_FREQ - MIN_FREQ + 1) + MIN_FREQ;
     return freq;
 }
 
-void frequency_hop(long original_freq) {
-    //purpose: 
-
-}
 
 
 int main() {
