@@ -6,6 +6,7 @@
 #define MAX_FREQ 2483500000 //max frequency (hz) for bluetooth
 #define KEY 10082001 //chosen key for encrypt/decrypt
 #define KEY2 802001
+#define KEY3 3
 #define NUM_CHANNELS 37
 #define CHANNEL_RANGE 2256757
 
@@ -46,7 +47,7 @@ char* encrypt(char* message) {
 
     int i;
     for(i = 0; i < length; i++) {
-        str2[i] = message[i] + (KEY/KEY2);
+        str2[i] = message[i] + KEY3;
     }
 
     char* encrypted = str2;
@@ -57,14 +58,17 @@ char* encrypt(char* message) {
 //method to decrypt message
 char* decrypt(char* message) {
 
+    printf("uh%s\n", message);
     int length = (int) strlen(message);
     char str2[length];
     strcpy(str2, message);
 
     int i;
     for(i = 0; i < length; i++) {
-        str2[i] = message[i] - (KEY/KEY2);
+        str2[i] = message[i] - KEY3;
     }
+
+    printf("%s\n", str2);
 
     char* decrypted = str2;
 
@@ -92,7 +96,7 @@ long generate_freq(int channel_num) {
     //long freq = rand() % (MAX_FREQ - MIN_FREQ + 1) + MIN_FREQ;
     return freq;
 }
-//method to initialize transmit packet
+//method to initialize packet
 void create_packet(struct TransmitPacket* packet, struct BluetoothDevice* device) {
 
     //encrypt device's message and store in packet to send
@@ -136,11 +140,11 @@ int allow_connection(long freq1, long freq2) {
 //return 1 if successful update
 //return 0 if unc
 int receive_packet(struct TransmitPacket* incoming_packet, struct BluetoothDevice* receiving_device) {
+
     printf("%s\n", incoming_packet->encrypted_message);
-    printf("%s\n", decrypt(incoming_packet->encrypted_message));
     //get receiving frequency from receiving device
     struct TransmitPacket* receive_packet = (struct TransmitPacket*) malloc(sizeof(struct TransmitPacket));
-    create_packet(receive_packet,receiving_device);
+    create_packet(receive_packet, receiving_device);
     long receiving_frequency = receive_packet->frequency;
 
     //if frequency matches incoming packet's frequency, attempt to decrypt
