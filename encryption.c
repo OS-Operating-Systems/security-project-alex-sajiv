@@ -3,9 +3,9 @@
 #include <string.h>
 #include <time.h>
 
-#define MIN_FREQ 2400000000
-#define MAX_FREQ 2483500000
-#define KEY 3
+#define MIN_FREQ 2400000000 //min frequency (hz) for bluetooth
+#define MAX_FREQ 2483500000 //max frequency (hz) for bluetooth
+#define KEY 3 //chosen key for frequency
 
 
 long generate_freq() {
@@ -14,25 +14,23 @@ long generate_freq() {
     return freq;
 }
 
-void encrypt(char* message) {
+char* encrypt(char message[]) {
 
     int i;
-    for(i = 0; (i < 100 && message[i] != '\0'); i++) {
+    for(i = 0; i < strlen(message); i++) {
         message[i] = message[i] + KEY;
     }
-    printf("%s\n", message);
+
+    return message;
 }
 
-char* decrypt(char* message) {
+char* decrypt(char message[]) {
 
     int i;
-    for(i = 0; (i < 100 && message[i] != '\0'); i++) {
-        //printf("%c\n", message[i] + 3);
+    for(i = 0; i < strlen(message); i++) {
         message[i] = message[i] - KEY;
-        //printf("%s\n", message);
     }
-    printf("%s\n", message);
-    //return message;
+    return message;
 }
 
 int main() {
@@ -40,11 +38,12 @@ int main() {
     long freq = generate_freq();
     printf("%ld\n", freq);
 
-    //message to encrypt must be less than 100 characters long
-    char* message = "hi";
-    //printf("%ld\n", strlen(message));
-    encrypt(message);
-    //printf("%s\n", encryped_message);
+    char message[] = "hi";
+    char* encrypted_message = encrypt(message);
+    printf("%s\n", encrypted_message);
+
+    char* decryped_message = decrypt(encrypted_message);
+    printf("%s\n", decryped_message);
 
     return 0;
 }
