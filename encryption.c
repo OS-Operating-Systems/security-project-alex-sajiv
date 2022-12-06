@@ -18,18 +18,17 @@ struct BluetoothDevice {
 
 
 //method to initialize bluetooth device with message and channel map
-struct BluetoothDevice create_device(char in_message[], int channel_map_seed) {
+void create_device(struct BluetoothDevice* device, char in_message[], int channel_map_seed) {
 
-    struct BluetoothDevice device;
+    //struct BluetoothDevice device;
 
-    device.decrypted_message = in_message;
+    device->decrypted_message = in_message;
 
     srand(channel_map_seed);
     for(int i = 0; i < NUM_CHANNELS; i++) {
-        device.channel_map[i] = rand() % 2; //1 for used, 0 for not used
+        device->channel_map[i] = rand() % 2; //1 for used, 0 for not used
     }
 
-    return device;
 }
 
 //a transmit packet has an encrypted message and a frequency to transmit on
@@ -166,22 +165,24 @@ int main() {
 
     //initialize bluetooth devices with same seed so they have matching channel maps
     int seed = 3;
-    struct BluetoothDevice device1 = create_device("hi I am device 1", seed);
-    struct BluetoothDevice device2 = create_device("hi", seed);
+    struct BluetoothDevice* device1  = (struct BluetoothDevice*) malloc(sizeof(struct BluetoothDevice));
+    struct BluetoothDevice* device2  = (struct BluetoothDevice*) malloc(sizeof(struct BluetoothDevice));
+    create_device(device1, "hi I am device 1", seed);
+    create_device(device2, "hi", seed);
 
-    printf("device1 message: %s\n", device1.decrypted_message);
-    printf("device2 before connection: %s\n", device2.decrypted_message);
+    printf("device1 message: %s\n", device1->decrypted_message);
+    printf("device2 before connection: %s\n", device2->decrypted_message);
 
 
     //create packet for device 1 with encryped message
-    struct TransmitPacket send_packet = create_packet(device1);
+    struct TransmitPacket send_packet = create_packet(*device1);
     //printf("%s\n", send_packet.encrypted_message);
 
     //attempt to transmit to device 2
-    int success_transmit = receive_packet(send_packet, &device2);
+    int success_transmit = receive_packet(send_packet, device2);
 
     //show device1's message on device2
-    printf("device2 after connection: %s\n", device2.decrypted_message);
+    printf("device2 after connection: %s\n", device2->decrypted_message);
 
     //need to implement some kind of send/receive functionality, right now only sends
     //so technically, device2 needs a receive packet that will decode encrypted packet
