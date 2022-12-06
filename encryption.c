@@ -39,24 +39,59 @@ struct TransmitPacket {
 };
 
 //method to encrypt message
-char* encrypt(char message[]) {
+char* encrypt(char* message) {
+
+    int length = (int) strlen(message);
+    char str2[length];
+    strcpy(str2, message);
 
     int i;
-    for(i = 0; i < strlen(message); i++) {
-        message[i] = message[i] + (KEY/KEY2);
+    for(i = 0; i < length; i++) {
+        str2[i] = message[i] + (KEY/KEY2);
     }
 
-    return message;
+    char* encrypted = str2;
+
+    return encrypted;
 }
 
 //method to decrypt message
-char* decrypt(char message[]) {
+char* decrypt(char* message) {
+
+    int length = (int) strlen(message);
+    char str2[length];
+    strcpy(str2, message);
 
     int i;
-    for(i = 0; i < strlen(message); i++) {
-        message[i] = message[i] - KEY;
+    for(i = 0; i < length; i++) {
+        str2[i] = message[i] - (KEY/KEY2);
     }
-    return message;
+
+    char* decrypted = str2;
+
+    return decrypted;
+}
+
+//calculate frequency for channel
+//this is the frequency hopping algorithm
+long generate_freq(int channel_num) {
+    //choose frequency to transmit on based on range of frequencies in channel
+    //all bluetooth frequencies between 2400 - 2483.5 MHZ, so 8.35E7 freqs in total
+    //divided by 37 channels, each channel has 2,256,757 freqs to choose from
+    //so the range for a channel is:
+    //min = 2400 Mhz + (channel_num * 2,256,757)
+    //max = min + (channel_num + 1) * 2,256,757
+
+    long channel_min = MIN_FREQ + (channel_num * CHANNEL_RANGE);
+    long channel_max = channel_min + CHANNEL_RANGE;
+
+    srand(time(0));
+
+    long freq = rand() % (channel_max - channel_min + 1) + channel_min;
+
+    //for random frequency in entire range
+    //long freq = rand() % (MAX_FREQ - MIN_FREQ + 1) + MIN_FREQ;
+    return freq;
 }
 //method to initialize transmit packet
 struct TransmitPacket create_packet(struct BluetoothDevice device) {
@@ -65,8 +100,6 @@ struct TransmitPacket create_packet(struct BluetoothDevice device) {
 
     //encrypt device's message and store in packet to send
     packet.encrypted_message = encrypt(device.decrypted_message);
-
-    //@Alex 
 
     //choose a channel to transmit on based on channel selection algorithm
     //(if device.channel_map[i] is 0, its a free channel, and we can use it)
@@ -91,27 +124,6 @@ struct TransmitPacket create_packet(struct BluetoothDevice device) {
     return packet;
 }
 
-//calculate frequency for channel
-//this is the frequency hopping algorithm
-long generate_freq(int channel_num) {
-    //choose frequency to transmit on based on range of frequencies in channel
-    //all bluetooth frequencies between 2400 - 2483.5 MHZ, so 8.35E7 freqs in total
-    //divided by 37 channels, each channel has 2,256,757 freqs to choose from
-    //so the range for a channel is:
-    //min = 2400 Mhz + (channel_num * 2,256,757)
-    //max = min + (channel_num + 1) * 2,256,757
-
-    long channel_min = MIN_FREQ + (channel_num * CHANNEL_RANGE);
-    long channel_max = channel_min + CHANNEL_RANGE;
-
-    srand(time(0));
-
-    long freq = rand() % (channel_max - channel_min + 1) + channel_min;
-
-    //for random frequency in entire range
-    //long freq = rand() % (MAX_FREQ - MIN_FREQ + 1) + MIN_FREQ;
-    return freq;
-}
 
 
 
@@ -129,7 +141,15 @@ int main() {
     }
     printf("\n");
 
-    //
+    //create packet for device 1
+    struct TransmitPacket packet = create_packet(device1);
+    printf("%s\n", packet.encrypted_message);
+    printf("device1 packet frequency %ld\n", packet.frequency);
+    //create packet for device 2
+    struct TransmitPacket packet2 = create_packet(device2);
+    printf("%s\n", packet2.encrypted_message);
+    printf("device2 packet frequency %ld\n", packet2.frequency);
+
 
     /*
 
