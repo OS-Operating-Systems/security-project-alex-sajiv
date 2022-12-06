@@ -2,7 +2,7 @@
 
 int main() {
     //wifi
-    double wifi_frequency
+    double wifi_frequency;
 
 
 
