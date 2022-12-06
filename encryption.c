@@ -136,42 +136,76 @@ int allow_connection(long freq1, long freq2) {
     }
 }
 
+//method to update device with packet if successful connection
+//return 1 if successful update
+//return 0 if unc
+int receive_packet(struct TransmitPacket incoming_packet, struct BluetoothDevice* receiving_device) {
+
+    printf("%s\n", decrypt(incoming_packet.encrypted_message));
+    //get receiving frequency from receiving device
+    long receiving_frequency = create_packet(*receiving_device).frequency;
+
+    //if frequency matches incoming packet's frequency, attempt to decrypt
+    int connection_success = allow_connection(incoming_packet.frequency, receiving_frequency);
+    if(connection_success == 1) {
+        receiving_device->decrypted_message = decrypt(incoming_packet.encrypted_message);
+        return 1;
+    }
+    else {
+        printf("Could not update device\n");
+        return 0;
+    }
+    
+}
+
 
 
 
 int main() {
 
-    //initialize bluetooth devices
+    //initialize bluetooth devices with same seed so they have matching channel maps
     int seed = 3;
     struct BluetoothDevice device1 = create_device("hi I am device 1", seed);
     struct BluetoothDevice device2 = create_device("hi I am device 2", seed);
 
-    //testing
+    printf("device1 message: %s\n", device1.decrypted_message);
+    printf("device2 before connection: %s\n", device2.decrypted_message);
+
+
+    //create packet for device 1 with encryped message
+    struct TransmitPacket send_packet = create_packet(device1);
+    //printf("%s\n", send_packet.encrypted_message);
+
+    //attempt to transmit to device 2
+    int success_transmit = receive_packet(send_packet, &device2);
+
+    //show device1's message on device2
+    printf("device2 after connection: %s\n", device2.decrypted_message);
+
+    //need to implement some kind of send/receive functionality, right now only sends
+    //so technically, device2 needs a receive packet that will decode encrypted packet
+    //make receive packet if device2 has good frequency
+
+
+    /*
+
+    //testing channels
+    /*
     for (int i = 0; i < NUM_CHANNELS; i++) {
 
         printf("%d, ", device1.channel_map[i]);
     }
     printf("\n");
 
-    //create packet for device 1
-    struct TransmitPacket packet = create_packet(device1);
-    printf("%s\n", packet.encrypted_message);
-    printf("device1 packet frequency %ld\n", packet.frequency);
     //create packet for device 2
-    struct TransmitPacket packet2 = create_packet(device2);
-    printf("%s\n", packet2.encrypted_message);
-    printf("device2 packet frequency %ld\n", packet2.frequency);
+    printf("%s\n", send_packet.encrypted_message);
+    printf("device1 packet frequency %ld\n", send_packet.frequency);
 
-    //need to implement some kind of send/receive functionality, right now only sends
-    //so technically, device2 needs a receive packet that will decode encrypted packet
-    //make receive packet if device2 has good frequency
-    int connection_success = allow_connection(packet.frequency, packet2.frequency);
+    struct TransmitPacket receive_packet = create_packet(device2);
+    printf("%s\n", receive_packet.encrypted_message);
+    printf("device2 packet frequency %ld\n", receive_packet.frequency);
 
-
-
-
-    /*
-
+    int connection_success = allow_connection(send_packet.frequency, receive_packet.frequency);
     long freq = generate_freq();
     printf("%ld\n", freq);
 
