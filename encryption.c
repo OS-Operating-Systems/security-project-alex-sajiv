@@ -93,12 +93,10 @@ long generate_freq(int channel_num) {
     return freq;
 }
 //method to initialize transmit packet
-struct TransmitPacket create_packet(struct BluetoothDevice device) {
-    
-    struct TransmitPacket packet;
+void create_packet(struct TransmitPacket* packet, struct BluetoothDevice* device) {
 
     //encrypt device's message and store in packet to send
-    packet.encrypted_message = encrypt(device.decrypted_message);
+    packet->encrypted_message = encrypt(device->decrypted_message);
 
     //choose a channel to transmit on based on channel selection algorithm
     //(if device.channel_map[i] is 0, its a free channel, and we can use it)
@@ -109,7 +107,7 @@ struct TransmitPacket create_packet(struct BluetoothDevice device) {
     int hop = 5;
     int channel_num = 0;
     while(match == 0) {
-        if (device.channel_map[channel_count] == 0) { //if channel is free
+        if (device->channel_map[channel_count] == 0) { //if channel is free
             match = 1; //end loop
         }
         channel_count += hop; //hop up 5 channels (apparanently this is standard practice)
@@ -119,8 +117,7 @@ struct TransmitPacket create_packet(struct BluetoothDevice device) {
     }
     //now channel count should have a free channel
     //below utilizes frequency hop algorithm
-    packet.frequency = generate_freq(channel_count);
-    return packet;
+    packet->frequency = generate_freq(channel_count);
 }
 
 int allow_connection(long freq1, long freq2) {
@@ -138,16 +135,18 @@ int allow_connection(long freq1, long freq2) {
 //method to update device with packet if successful connection
 //return 1 if successful update
 //return 0 if unc
-int receive_packet(struct TransmitPacket incoming_packet, struct BluetoothDevice* receiving_device) {
-
-    //printf("%s\n", decrypt(incoming_packet.encrypted_message));
+int receive_packet(struct TransmitPacket* incoming_packet, struct BluetoothDevice* receiving_device) {
+    printf("%s\n", incoming_packet->encrypted_message);
+    printf("%s\n", decrypt(incoming_packet->encrypted_message));
     //get receiving frequency from receiving device
-    long receiving_frequency = create_packet(*receiving_device).frequency;
+    struct TransmitPacket* receive_packet = (struct TransmitPacket*) malloc(sizeof(struct TransmitPacket));
+    create_packet(receive_packet,receiving_device);
+    long receiving_frequency = receive_packet->frequency;
 
     //if frequency matches incoming packet's frequency, attempt to decrypt
-    int connection_success = allow_connection(incoming_packet.frequency, receiving_frequency);
+    int connection_success = allow_connection(incoming_packet->frequency, receiving_frequency);
     if(connection_success == 1) {
-        receiving_device->decrypted_message = decrypt(incoming_packet.encrypted_message);
+        receiving_device->decrypted_message = decrypt(incoming_packet->encrypted_message);
         printf("%s\n", receiving_device->decrypted_message);
         return 1;
     }
@@ -155,7 +154,7 @@ int receive_packet(struct TransmitPacket incoming_packet, struct BluetoothDevice
         printf("Could not update device\n");
         return 0;
     }
-    
+    free(receive_packet);
 }
 
 
@@ -175,7 +174,8 @@ int main() {
 
 
     //create packet for device 1 with encryped message
-    struct TransmitPacket send_packet = create_packet(*device1);
+    struct TransmitPacket* send_packet = (struct TransmitPacket*) malloc(sizeof(struct TransmitPacket));
+    create_packet(send_packet, device1);
     //printf("%s\n", send_packet.encrypted_message);
 
     //attempt to transmit to device 2
@@ -183,6 +183,10 @@ int main() {
 
     //show device1's message on device2
     printf("device2 after connection: %s\n", device2->decrypted_message);
+
+    free(device1);
+    free(device2);
+    free(send_packet);
 
     //need to implement some kind of send/receive functionality, right now only sends
     //so technically, device2 needs a receive packet that will decode encrypted packet
