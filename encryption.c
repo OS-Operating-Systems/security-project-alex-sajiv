@@ -124,6 +124,18 @@ struct TransmitPacket create_packet(struct BluetoothDevice device) {
     return packet;
 }
 
+int allow_connection(long freq1, long freq2) {
+    //allow connection if frequencies match
+    if(freq1 == freq2) {
+        printf("Successful connection\n");
+        return 1;
+    }
+    else {
+        printf("Could not connect\n");
+        return 0;
+    }
+}
+
 
 
 
@@ -149,6 +161,13 @@ int main() {
     struct TransmitPacket packet2 = create_packet(device2);
     printf("%s\n", packet2.encrypted_message);
     printf("device2 packet frequency %ld\n", packet2.frequency);
+
+    //need to implement some kind of send/receive functionality, right now only sends
+    //so technically, device2 needs a receive packet that will decode encrypted packet
+    //make receive packet if device2 has good frequency
+    int connection_success = allow_connection(packet.frequency, packet2.frequency);
+
+
 
 
     /*
