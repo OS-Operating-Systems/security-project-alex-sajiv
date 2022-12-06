@@ -141,7 +141,7 @@ int allow_connection(long freq1, long freq2) {
 //return 0 if unc
 int receive_packet(struct TransmitPacket incoming_packet, struct BluetoothDevice* receiving_device) {
 
-    printf("%s\n", decrypt(incoming_packet.encrypted_message));
+    //printf("%s\n", decrypt(incoming_packet.encrypted_message));
     //get receiving frequency from receiving device
     long receiving_frequency = create_packet(*receiving_device).frequency;
 
@@ -149,6 +149,7 @@ int receive_packet(struct TransmitPacket incoming_packet, struct BluetoothDevice
     int connection_success = allow_connection(incoming_packet.frequency, receiving_frequency);
     if(connection_success == 1) {
         receiving_device->decrypted_message = decrypt(incoming_packet.encrypted_message);
+        printf("%s\n", receiving_device->decrypted_message);
         return 1;
     }
     else {
@@ -166,7 +167,7 @@ int main() {
     //initialize bluetooth devices with same seed so they have matching channel maps
     int seed = 3;
     struct BluetoothDevice device1 = create_device("hi I am device 1", seed);
-    struct BluetoothDevice device2 = create_device("hi I am device 2", seed);
+    struct BluetoothDevice device2 = create_device("hi", seed);
 
     printf("device1 message: %s\n", device1.decrypted_message);
     printf("device2 before connection: %s\n", device2.decrypted_message);
