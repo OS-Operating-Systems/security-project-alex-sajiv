@@ -39,19 +39,28 @@ typedef struct {
 } TransmitPacket;
 
 //method to encrypt message
-void encrypt(char message[], char return_message[]) {
-
-
+void encrypt(char message[]) {
+    int length = (int) strlen(message);
     int i;
-    for(i = 0; (i < 100 && message[i] != '\0'); i++) {
-        return_message[i] = message[i] + 3;
+    for(i = 0; (i < length && message[i] != '\0'); i++) {
+        message[i] = message[i] + 3;
     }
 
 }
 
+//method to encrypt message
+void decrypt(char message[]) {
+    int length = (int) strlen(message);
+    int i;
+    for(i = 0; (i < length && message[i] != '\0'); i++) {
+        message[i] = message[i] - 3;
+    }
+
+}
+/*
 
 //method to decrypt message
-char* decrypt(char* message2) {
+void decrypt(char message[]) {
 
     int length = (int) strlen(message2);
     char str2[length];
@@ -165,13 +174,16 @@ int receive_packet(struct TransmitPacket* incoming_packet, struct TransmitPacket
 int main() {
 
     char mess[] = "hello";
-    int length = (int) strlen(mess);
-    char encrypt_mess[length];
 
-    encrypt(mess, encrypt_mess);
+    encrypt(mess);
 
-    printf("%s\n", encrypt_mess);
+    printf("%s\n", mess);
 
+    decrypt(mess);
+
+    printf("%s\n", mess);
+
+/*
     int length = (int) strlen(mess);
     char encrypt_mess[length];
 
