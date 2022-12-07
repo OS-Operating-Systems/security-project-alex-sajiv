@@ -240,9 +240,27 @@ int authenticate(int sender_id, int expected_id)
 	}
 }
 
-void recieve_packet(struct TransmitPacket* incoming_packet, struct BluetoothDevice* receiving_device)
+//Device recieves and decrypts message
+//Return 1 if successful connection, 0 if not successful connection 
+int receive_packet(struct TransmitPacket* incoming_packet, struct BluetoothDevice* receiving_device)
 {
-	
+	//If packet in channel and is from the correct device id receive the data
+	if(allow_connection(receiving_device, incoming_packet -> frequency) == 1 && authenticate(incoming_packet->sender_id,  receiving_device->connected_id == 1))
+	{
+		char* decrypt_message = decrypt(incoming_packet->encrypted_message, receiving_device->key);
+        	receiving_device->decrypted_message = decrypt_message;
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}	
+}
+
+//Have device channel hop 
+void update_channel(struct BluetoothDevice* device)
+{
+	device->channel = channel_hop(device->channel);
 }
 
 
@@ -282,9 +300,8 @@ int main() {
 	create_packet(send_packet, device1);
 	printf("Packet encrypted message: %s\n", send_packet->encrypted_message);
 	printf("Device 1 channel: %d\nPacket frequency: %ld\n", device1->channel, send_packet->frequency);
-	allow_connection(device2, send_packet->frequency);
+	receive_packet(send_packet, device2);
 	
-
 
 
 }
