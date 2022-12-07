@@ -245,11 +245,6 @@ int authenticate(int sender_id, int expected_id)
 	}
  }
 
-void does_nothing(char*message)
-{
-	printf("Nothing : %s\n", message);
-}
-
 //Device recieves and decrypts message
 //Return 1 if successful connection, 0 if not successful connection 
 int receive_packet(struct TransmitPacket* incoming_packet, struct BluetoothDevice* receiving_device)
@@ -282,8 +277,8 @@ int main() {
 	initialize_channel_map(CHANNEL_MAP_SEED);
 	struct BluetoothDevice* device1  = (struct BluetoothDevice*) malloc(sizeof(struct BluetoothDevice));
 	struct BluetoothDevice* device2  = (struct BluetoothDevice*) malloc(sizeof(struct BluetoothDevice));
-	char message1[] = "hi";
-	char message2[] = "hello";
+	char message1[] = "i love coding";
+	char message2[] = "";
 	
 	create_device(device1, message1, 1);
 	create_device(device2, message2, 2);	
@@ -316,18 +311,20 @@ int main() {
 	struct TransmitPacket* send_packet = (struct TransmitPacket*) malloc(sizeof(struct TransmitPacket));
 	create_packet(send_packet, device1);
     
+    //check if message was encrypted
 	printf("Packet encrypted message: %s \n", send_packet->encrypted_message);
 
-
+    //check channel and frequency
 	printf("Device 1 channel: %d \nPacket frequency: %ld \n", device1->channel, send_packet->frequency);
 
+    //send packet with encrypted message to device2
+    //decrypt message from packet based on device2's key
+    //if successful connection, device2 now has the message from device1
+	int success = receive_packet(send_packet, device2);
 
-	does_nothing(send_packet->encrypted_message);
-	printf("Packet encrypted message: %s \n", send_packet->encrypted_message);
-	receive_packet(send_packet, device2);
-	 printf("Packet encrypted message: %s \n", send_packet->encrypted_message);
-	printf("keys %d   %d", device1->key, device2->key);
+    printf("device2 received message: %s\n", device2->decrypted_message);
 
+    //optional disconnect (unpair) devices
 
 }
 
