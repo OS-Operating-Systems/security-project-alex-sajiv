@@ -8,6 +8,7 @@
 #define KEY2 802001
 #define KEY3 3
 #define NUM_CHANNELS 37 //3 for inquiry 37 for use
+#define NUM_INQUIRY_CHANNELS 3
 #define CHANNEL_RANGE 2000000
 #define CHANNEL_MAP_SEED 3
 #define MAX_ON_CHANNEL 10
@@ -24,11 +25,14 @@ struct BluetoothDevice {
     //int private_key;
 };
 
-int channel_map[NUM_CHANNELS]; //either 1 for used channel, or 0 for free channel
-struct BluetoothDevice* inquiry_channel_map[3];
+int channel_map[NUM_CHANNELS]; //each int has the number of connections on that channel
+
+//assumes 1 device per pairing channel
+//array of all devices in pairing mode across the 3 pairing channels
+struct BluetoothDevice* inquiry_channel_map[3]; 
 
 //method to initialize bluetooth device with message and channel map
-void create_device(struct BluetoothDevice* device, char* in_message, int device_id) {
+void create_device(struct BluetoothDevice* device, char in_message[], int device_id) {
     device->decrypted_message = in_message;
     device->mode = 0; // device starts disconnected
     device->id = device_id;
@@ -55,13 +59,17 @@ void initialize_channel_map(int channel_map_seed)
 
 //Request inquiry in inquiry channels
 void inquiry_request(struct BluetoothDevice* device)
+//modes
+//0 is not connected
+//1 is pairing mode (request to connect)
+//2 is connected
 {
-	for(int i = 0; i < 3; i++ )
+	for(int i = 0; i < NUM_INQUIRY_CHANNELS; i++ )
 	{
 		if(inquiry_channel_map[i] == NULL || inquiry_channel_map[i]->mode != 1)
 		{
 			inquiry_channel_map[i] = device;
-			device->mode = 1;
+			device->mode = 1; 
 			return;
 		}
 	}
@@ -73,7 +81,7 @@ void inquiry_request(struct BluetoothDevice* device)
 //Return the key
 int generate_key()
 {
-        return 3;
+        return KEY3;
 }
 
 int channel_hop(int beginning_channel)
@@ -96,22 +104,28 @@ int channel_hop(int beginning_channel)
     }
 }
 
+//Have device channel hop 
+void update_channels(struct BluetoothDevice* device1, struct BluetoothDevice* device2)
+{
+	int new_channel = channel_hop(device1->channel);
+    device1->channel = new_channel;
+	device2->channel = new_channel;
+}
+
 //Connect the two devices
 //Give each device info on the device it is trying to connect with
 void connect(struct BluetoothDevice* device1, struct BluetoothDevice* device2)
 {
-        device1 -> mode = 2;
-        device2-> mode = 2;
-        device1 -> connected_id = device2->id;
-        device2 -> connected_id = device1->id;
-        int generated_key = generate_key();
-        device1 -> key = generated_key;
-        device2 -> key = generated_key;
+    device1 -> mode = 2;
+    device2-> mode = 2;
+    device1 -> connected_id = device2->id;
+    device2 -> connected_id = device1->id;
+    int generated_key = generate_key();
+    device1 -> key = generated_key;
+    device2 -> key = generated_key;
 	int new_channel = channel_hop(device1->channel);
 	device1->channel = new_channel;
 	device2->channel = new_channel;
-       		
-
 }
 
 
@@ -138,36 +152,25 @@ struct TransmitPacket {
 };
 
 //method to encrypt message
-char* encrypt(char* message, int key) {
+void encrypt(char* message, int key) {
 
     int length = (int) strlen(message);
-    char str2[length];
-    strcpy(str2, message);
-
     int i;
-    for(i = 0; i < length; i++) {
-        str2[i] = message[i] + key;
+    for(i = 0; (i < length && message[i] != '\0'); i++) {
+        message[i] = message[i] + key;
     }
 
-    char* encrypted = str2;
-    return encrypted;
 }
 
 //method to decrypt message
-char* decrypt(char* message, int key) {
+void decrypt(char* message, int key) {
 
     int length = (int) strlen(message);
-    char str2[length];
-    strcpy(str2, message);
-
     int i;
-    for(i = 0; i < length; i++) {
-        str2[i] = message[i] - key;
+    for(i = 0; (i < length && message[i] != '\0'); i++) {
+        message[i] = message[i] - key;
     }
 
-    char* decrypted = str2;
-    printf("decrypted: %s\n", decrypted);
-    return decrypted;
 }
 
 long generate_freq(int channel_num) {
@@ -196,11 +199,12 @@ long generate_freq(int channel_num) {
 void create_packet(struct TransmitPacket* packet, struct BluetoothDevice* device) {
 
     //encrypt device's message and store in packet to send
-    packet->encrypted_message = encrypt(device->decrypted_message, device->key);
+    packet->encrypted_message = device->decrypted_message;
+    encrypt(packet->encrypted_message, device->key);
     //choose a channel to transmit on based on channel selection algorithm
     //(if device.channel_map[i] is 0, its a free channel, and we can use it)
 
-    int channel_count = channel_hop(device->channel);
+    int channel_count = device->channel;
     //now channel count should have a free channel
     //below utilizes frequency hop algorithm
     packet->frequency = generate_freq(channel_count);
@@ -241,11 +245,6 @@ int authenticate(int sender_id, int expected_id)
 	}
  }
 
-void does_nothing(char*message)
-{
-	printf("Nothing : %s\n", message);
-}
-
 //Device recieves and decrypts message
 //Return 1 if successful connection, 0 if not successful connection 
 int receive_packet(struct TransmitPacket* incoming_packet, struct BluetoothDevice* receiving_device)
@@ -254,8 +253,11 @@ int receive_packet(struct TransmitPacket* incoming_packet, struct BluetoothDevic
 	if(allow_connection(receiving_device, incoming_packet -> frequency) == 1 && authenticate(incoming_packet->sender_id,  receiving_device->connected_id == 1))
 	{
 		printf("encrypted: %s\n", incoming_packet->encrypted_message);
-		char* decrypt_message = decrypt(incoming_packet->encrypted_message, receiving_device->key);
-        	receiving_device->decrypted_message = decrypt_message;
+
+        //copying encrypted message into device
+        receiving_device->decrypted_message = incoming_packet->encrypted_message; 
+        //decrypting the currently encrypted message on the device
+        decrypt(receiving_device->decrypted_message, receiving_device->key);
 		return 1;
 	}
 	else
@@ -264,29 +266,27 @@ int receive_packet(struct TransmitPacket* incoming_packet, struct BluetoothDevic
 	}	
 }
 
-//Have device channel hop 
-void update_channel(struct BluetoothDevice* device)
-{
-	device->channel = channel_hop(device->channel);
-}
 
 
 
 int main() {
+
+    //pairing portion
 	
 	//Initialize channel map and devices to be used
 	initialize_channel_map(CHANNEL_MAP_SEED);
 	struct BluetoothDevice* device1  = (struct BluetoothDevice*) malloc(sizeof(struct BluetoothDevice));
 	struct BluetoothDevice* device2  = (struct BluetoothDevice*) malloc(sizeof(struct BluetoothDevice));
-	char* message1 = "hi";
-	char* message2 = "hello";
+	char message1[] = "i love coding";
+	char message2[] = "";
 	
 	create_device(device1, message1, 1);
 	create_device(device2, message2, 2);	
 	
-	printf("device1 message: %s\n", device1->decrypted_message);
+	//printf("device1 message: %s\n", device1->decrypted_message);
 	printf("Device 1 mode before inquiry: %d\n", device1->mode);
-	printf("device2 before connection: %s\n", device2->decrypted_message);
+	printf("Device 2 mode before inquiry: %d\n", device2->mode);
+	//printf("device2 before connection: %s\n", device2->decrypted_message);
 	
 	
 	//Inquiry	
@@ -299,20 +299,32 @@ int main() {
 	}
 		
 	printf("Device 1 connected to device id: %d\n", device1->connected_id);
+
+    //communication between devices portion
 	
 	//Send message
 	
+    //before creating packet, channel hop the devices to a new channel
+    update_channels(device1, device2);
+
 	//create packet for device 1 with encrypted message
 	struct TransmitPacket* send_packet = (struct TransmitPacket*) malloc(sizeof(struct TransmitPacket));
 	create_packet(send_packet, device1);
+    
+    //check if message was encrypted
 	printf("Packet encrypted message: %s \n", send_packet->encrypted_message);
-	printf("Device 1 channel: %d \nPacket frequency: %ld \n", device1->channel, send_packet->frequency);
-	does_nothing(send_packet->encrypted_message);
-	printf("Packet encrypted message: %s \n", send_packet->encrypted_message);
-	receive_packet(send_packet, device2);
-	 printf("Packet encrypted message: %s \n", send_packet->encrypted_message);
-	printf("keys %d   %d", device1->key, device2->key);
 
+    //check channel and frequency
+	printf("Device 1 channel: %d \nPacket frequency: %ld \n", device1->channel, send_packet->frequency);
+
+    //send packet with encrypted message to device2
+    //decrypt message from packet based on device2's key
+    //if successful connection, device2 now has the message from device1
+	int success = receive_packet(send_packet, device2);
+
+    printf("device2 received message: %s\n", device2->decrypted_message);
+
+    //optional disconnect (unpair) devices
 
 }
 
