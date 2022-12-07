@@ -146,14 +146,12 @@ char* encrypt(char* message, int key) {
     }
 
     char* encrypted = str2;
-
     return encrypted;
 }
 
 //method to decrypt message
 char* decrypt(char* message, int key) {
 
-    printf("%s\n", message);
     int length = (int) strlen(message);
     char str2[length];
     strcpy(str2, message);
@@ -164,7 +162,7 @@ char* decrypt(char* message, int key) {
     }
 
     char* decrypted = str2;
-
+    printf("decrypted: %s\n", decrypted);
     return decrypted;
 }
 
@@ -195,7 +193,6 @@ void create_packet(struct TransmitPacket* packet, struct BluetoothDevice* device
 
     //encrypt device's message and store in packet to send
     packet->encrypted_message = encrypt(device->decrypted_message, device->key);
-
     //choose a channel to transmit on based on channel selection algorithm
     //(if device.channel_map[i] is 0, its a free channel, and we can use it)
 
@@ -238,6 +235,11 @@ int authenticate(int sender_id, int expected_id)
 		printf("Incorrect Sender ID\n");
 		return 0;
 	}
+ }
+
+void does_nothing(char*message)
+{
+	printf("Nothing : %s\n", message);
 }
 
 //Device recieves and decrypts message
@@ -247,6 +249,7 @@ int receive_packet(struct TransmitPacket* incoming_packet, struct BluetoothDevic
 	//If packet in channel and is from the correct device id receive the data
 	if(allow_connection(receiving_device, incoming_packet -> frequency) == 1 && authenticate(incoming_packet->sender_id,  receiving_device->connected_id == 1))
 	{
+		printf("encrypted: %s\n", incoming_packet->encrypted_message);
 		char* decrypt_message = decrypt(incoming_packet->encrypted_message, receiving_device->key);
         	receiving_device->decrypted_message = decrypt_message;
 		return 1;
@@ -298,10 +301,13 @@ int main() {
 	//create packet for device 1 with encrypted message
 	struct TransmitPacket* send_packet = (struct TransmitPacket*) malloc(sizeof(struct TransmitPacket));
 	create_packet(send_packet, device1);
-	printf("Packet encrypted message: %s\n", send_packet->encrypted_message);
-	printf("Device 1 channel: %d\nPacket frequency: %ld\n", device1->channel, send_packet->frequency);
+	printf("Packet encrypted message: %s \n", send_packet->encrypted_message);
+	printf("Device 1 channel: %d \nPacket frequency: %ld \n", device1->channel, send_packet->frequency);
+	does_nothing(send_packet->encrypted_message);
+	printf("Packet encrypted message: %s \n", send_packet->encrypted_message);
 	receive_packet(send_packet, device2);
-	
+	 printf("Packet encrypted message: %s \n", send_packet->encrypted_message);
+	printf("keys %d   %d", device1->key, device2->key);
 
 
 }
