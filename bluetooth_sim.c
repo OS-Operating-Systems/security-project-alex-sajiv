@@ -10,6 +10,7 @@
 #define NUM_CHANNELS 37 //3 for inquiry 37 for use
 #define CHANNEL_RANGE 2000000
 #define CHANNEL_MAP_SEED 3
+#define MAX_ON_CHANNEL 10
 
 //a bluetooth device has a decrypted message, id, and mode
 struct BluetoothDevice {
@@ -48,7 +49,7 @@ void initialize_channel_map(int channel_map_seed)
 	srand(channel_map_seed);
     	for(int i = 0; i < NUM_CHANNELS; i++)
 	{
-        	channel_map[i] = rand() % 2; //1 for used, 0 for not used
+        	channel_map[i] = rand() % (MAX_ON_CHANNEL+1); // 10 means busy anything under means available
     	}
 }
 
@@ -79,12 +80,15 @@ int channel_hop(int beginning_channel)
 {
     //channel hopping algorithm: iterate through channels by 5, if hits, get a frequency in range for that channel
     int hop = 5;
+    channel_map[beginning_channel]-=1;
     int channel_count = beginning_channel + hop;
     int match = 0;
     while(match == 0) {
-        if (channel_map[channel_count] == 0) { //if channel is free
+        if (channel_map[channel_count] < 10) { //if channel is free
             match = 1; //end loop
-        }
+	    channel_map[channel_count] += 1;
+            return channel_count;
+	}
         channel_count += hop; //hop up 5 channels (apparanently this is standard practice)
         if(channel_count >= NUM_CHANNELS) { //if go higher than 37
             channel_count -= NUM_CHANNELS; //reset to beginning
