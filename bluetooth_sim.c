@@ -9,7 +9,7 @@
 #define KEY3 3
 #define NUM_CHANNELS 40 //3 for inquiry 37 for use
 #define CHANNEL_RANGE 2000000
-
+#define CHANNEL_MAP_SEED 3
 
 //a bluetooth device has a decrypted message, id, and mode
 struct BluetoothDevice {
@@ -21,6 +21,9 @@ struct BluetoothDevice {
     //int public_key;
     //int private_key;
 };
+
+int channel_map[NUM_CHANNELS-3]; //either 1 for used channel, or 0 for free channel
+struct BluetoothDevice* inquiry_channel_map[3];
 
 //method to initialize bluetooth device with message and channel map
 void create_device(struct BluetoothDevice* device, char* in_message, int device_id) {
@@ -38,23 +41,24 @@ void set_message(struct BluetoothDevice* device)
 }
 
 //Initailizes 37 channels for channel map
-void initialize_channel_map(int channel_map_seed, int**channel_map)
+void initialize_channel_map(int channel_map_seed)
 {
 	srand(channel_map_seed);
     	for(int i = 0; i < NUM_CHANNELS; i++)
 	{
-        	*channel_map[i] = rand() % 2; //1 for used, 0 for not used
+        	channel_map[i] = rand() % 2; //1 for used, 0 for not used
     	}
 }
 
 //Request inquiry in inquiry channels
-void inquiry_request(struct BluetoothDevice* device, struct BluetoothDevice* inquiry_map[3])
+void inquiry_request(struct BluetoothDevice* device)
 {
 	for(int i = 0; i < 3; i++ )
 	{
-		if(inquiry_map[i] == NULL || inquiry_map[i]->mode != 1)
+		if(inquiry_channel_map[i] == NULL || inquiry_channel_map[i]->mode != 1)
 		{
-			inquiry_map[i] == device;
+			inquiry_channel_map[i] = device;
+			device->mode = 1;
 			return;
 		}
 	}
@@ -64,28 +68,23 @@ void inquiry_request(struct BluetoothDevice* device, struct BluetoothDevice* inq
 
 //Search the inquiry channels for requests
 //return 0 if device not found 1 if devicefound
-int inquiry_search(struct BluetoothDevice* device, struct BluetoothDevice* inquiry_map[3])
+int inquiry_search(struct BluetoothDevice* device)
 {
 	for(int i = 0; i < 3; i++ )
         {
-                if(inquiry_map[i] != NULL && inquiry_map[i]->mode==1)
+                if(inquiry_channel_map[i] != NULL && inquiry_channel_map[i]->mode==1)
                 {
-                        connect(device, inquiry_map[i]);
+                        connect(device, inquiry_channel_map[i]);
 			return 1;
                 }
-		else if(inquiry_map[i]->mode != 1)
-		{
-			connect(device, inquiry_map);
-                        return 1;
-		}
         }
-	return 0;
+	return 0; // did not find device
 }
 
 
 void connect(struct BluetoothDevice* device1, struct BluetoothDevice* device2)
 {
-
+	
 }
 
 
@@ -153,11 +152,12 @@ long generate_freq(int channel_num) {
 
 int main() {
 	
-	int channel_map_seed = 3;
-	int channel_map[NUM_CHANNELS-3]; //either 1 for used channel, or 0 for free channel
-	struct BluetoothDevice* inquiry_channel_map[3] = {NULL, NULL, NULL};
+	//int channel_map_seed = 3;
+	//int channel_map[NUM_CHANNELS-3]; //either 1 for used channel, or 0 for free channel
+	//struct BluetoothDevice* inquiry_channel_map[3] = {NULL, NULL, NULL};
 
-	initialize_channel_map(channel_map_seed, &channel_map);
+	initialize_channel_map(CHANNEL_MAP_SEED);
+
 
 }
 
