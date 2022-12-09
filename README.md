@@ -3,7 +3,7 @@
 This is program to simulate a bluetooth pairing, and send 1 packet of encrypted data to a paired device.  
 
 # Why Is This Important?
-Radio communication security is important because almost all devices today transmit and/or recieve radio frequencies. So, there's radio waves constantly all around us in our daily lives. Alot of these radio frequencies are unencrypted and unprotected from anybody to intercept. This is a problem since it is unwanted for many  radio communications to have unauthorized people such as eavesdroppers and hackers understand what is being sent. Examples of radio signals that could be easily intercepted include airport communications, device broadcasts, weather stations, satellites, and emergency communications. Although there are many unprotected radio frequencies there are some that are. These would include things such as Bluetooth and Wi-Fi. These radio communications, although protected, are still at risk of eavesdroppers and hackers that have descovered how to decrypt these radio signals. So, it is important to continuously aim to improve radio signal security methods and encryptions.
+Radio communication security is important because almost all devices today transmit and/or recieve radio frequencies. So, there's radio waves constantly all around us in our daily lives. A lot of these radio frequencies are unencrypted and unprotected from anybody to intercept. This is a problem since it is unwanted for many  radio communications to have unauthorized people such as eavesdroppers and hackers understand what is being sent. Examples of radio signals that could be easily intercepted include airport communications, device broadcasts, weather stations, satellites, and emergency communications. Although there are many unprotected radio frequencies there are some that are protected. These would include things such as Bluetooth and Wi-Fi. These radio communications, although protected, are still at risk of eavesdroppers and hackers that have descovered how to decrypt these radio signals. So, it is important to continuously aim to improve radio signal security methods and encryptions.
 
 
 
@@ -21,7 +21,8 @@ Sajiv:
 - Channel hop algorithm  
 - Generate frequency within channel  
 - Encrytion and decryption  
-- Transmit packet struct and create packet  
+- Transmit packet struct and create packet
+- Bluetooth Device struct  
 - Debugging  
 
 
@@ -35,6 +36,7 @@ gcc bluetooth_sim.c
 
 
 #Description of How Program Works
+Our program starts by creating 2 bluetooth devices. They both are 
 
 
 
