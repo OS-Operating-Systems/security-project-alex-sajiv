@@ -46,8 +46,12 @@ We then start the inquiry, or pairing process. We call `void inquiry_request(str
 We then call `inquiry_search(struct BluetoothDevice* device)` on device2, where it searches the `inquiry_channel_map` to see if a device is available to pair to. If it returns 1, pair using `void connect(struct BluetoothDevice* device1, struct BluetoothDevice* device2)`. Both devices get put in mode 2, for connected, and their connected ids get updated to the other device's id. We generate a key for both devices to use for later encryption and decryption using `generate_key()`. Both channels are given a channel based on the `int channel_hop(int beginning_channel)`. This method uses a channel hopping algorithm to pick a random channel to communicate on. This algorithm is a simplified version of the real version from Bluetooth.
 
 ## Communication phase
+In this phase, we send 1 encryped packet of data from device 1 to device 2. This simulates how paired devices communicate, like music data going from a phone to paired headphones. In a future iteration, this program would loop this phase to simulate more than 1 piece of data.
 
 
+First, we call `void update_channels(struct BluetoothDevice* device1, struct BluetoothDevice* device2)` which puts the devices on a new channel to communicate on. Ideally, this would be called between transmitting each packet to avoid communicating on the same channel as other devices in the area.
+
+Once they have been channel hopped, we create a `struct TransmitPacket*` for device 1. In `oid create_packet(struct TransmitPacket* packet, struct BluetoothDevice* device)`, this makes that packet with an encrypted version of the message within the device using `void encrypt(char* message, int key)`. This method creates an encrypted version of a string with using the key on the device. Our encryption algorithm is very simple, we just increment the ASCII values by the key. Once we have this, we use the free channel we found by channel hopping to detemine a specific frequency to transmit the packet on. We use `long generate_freq(int channel_num)` to get this frequency. This frequency generation algorithm uses the fact that all bluetooth frequencies between 2400 - 2483.5 MHZ, and there are 40 channels, so each channel is 2MHz wide. This gives us 2 million frequencies to choose from. This frequency is assigned to the packet.
 
 
 # Extra
