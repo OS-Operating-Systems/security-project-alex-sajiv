@@ -53,6 +53,13 @@ First, we call `void update_channels(struct BluetoothDevice* device1, struct Blu
 
 Once they have been channel hopped, we create a `struct TransmitPacket*` for device 1. In `oid create_packet(struct TransmitPacket* packet, struct BluetoothDevice* device)`, this makes that packet with an encrypted version of the message within the device using `void encrypt(char* message, int key)`. This method creates an encrypted version of a string with using the key on the device. Our encryption algorithm is very simple, we just increment the ASCII values by the key. Once we have this, we use the free channel we found by channel hopping to detemine a specific frequency to transmit the packet on. We use `long generate_freq(int channel_num)` to get this frequency. This frequency generation algorithm uses the fact that all bluetooth frequencies between 2400 - 2483.5 MHZ, and there are 40 channels, so each channel is 2MHz wide. This gives us 2 million frequencies to choose from. This frequency is assigned to the packet.
 
+We then call `int receive_packet(struct TransmitPacket* incoming_packet, struct BluetoothDevice* receiving_device)` on the receiving device with the packet we just created. First, this checks if the device can receive the packet with `int allow_connection(struct BluetoothDevice* device, long freq)`. We check if the given frequency was inside the same channel as the device with the inverse of the arithmetic we used earlier. We also use `int authenticate(int sender_id, int expected_id)` to make sure the device IDs match.
+
+When both these conditions are met, we copy the encrypted message from the packet into the receiving device, then decrypt it with `void decrypt(char* message, int key)`, which does the inverse of encrypt to decode the encrypted message. If it was successful, we return 1.
+
+## End
+At the end of the program, device 2 has received an encrypted message from device 1 using the communication practices of real-life bluetooth.
+
 
 # Extra
 The files aes.c and aes.h include an example of an AES encryption that would typially be used in Bluetooth encryption. Although it was not implemented in the program, we thought it would be cool to still include these files. The URL of the source for these files are included at the top of these files.
